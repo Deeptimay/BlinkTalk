@@ -11,10 +11,9 @@ jobs:
     name: Dart Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.4'
           channel: 'stable'
           cache: true
       - run: flutter pub get
@@ -24,10 +23,9 @@ jobs:
     name: Flutter Analyze
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.4'
           channel: 'stable'
           cache: true
       - run: flutter pub get
@@ -37,23 +35,21 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.4'
           channel: 'stable'
           cache: true
       - run: flutter pub get
-      - run: flutter test
+      - run: flutter test --coverage
 
   android-lint:
     name: Android Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.4'
           channel: 'stable'
           cache: true
       - uses: actions/setup-java@v4
@@ -77,10 +73,9 @@ jobs:
     name: Kotlin Detekt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.4'
           channel: 'stable'
           cache: true
       - uses: actions/setup-java@v4
@@ -101,13 +96,12 @@ jobs:
         run: ./gradlew detektDebug
 
   build:
-    name: Build APK
+    name: Build App Bundle
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.4'
           channel: 'stable'
           cache: true
       - uses: actions/setup-java@v4
@@ -116,9 +110,9 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
       - run: flutter pub get
-      - run: flutter build apk --debug
-      - name: Upload APK
+      - run: flutter build appbundle --debug
+      - name: Upload App Bundle
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: debug-app-bundle
+          path: build/app/outputs/bundle/debug/app-debug.aab
