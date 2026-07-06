@@ -2,6 +2,17 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("io.gitlab.arturbosch.detekt")
+}
+
+detekt {
+    toolVersion = "1.23.6"
+    buildUponDefaultConfig = true
+    allRules = false
+    config.setFrom(files("detekt-config.yml"))
+    if (project.hasProperty("detektInput")) {
+        source.setFrom(files(project.property("detektInput").toString().split(",")))
+    }
 }
 
 android {

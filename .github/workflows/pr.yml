@@ -7,38 +7,118 @@ on:
       - main
 
 jobs:
-  verify:
+  format:
+    name: Dart Format
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.44.4'
+          channel: 'stable'
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed .
 
-      - name: Cache Pub packages
-        uses: actions/cache@v4
+  analyze:
+    name: Flutter Analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
         with:
-          path: |
-            ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
+          flutter-version: '3.44.4'
+          channel: 'stable'
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
 
-      - name: Install dependencies
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: 'stable'
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+
+  android-lint:
+    name: Android Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: 'stable'
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+      - name: Get Flutter dependencies
         run: flutter pub get
+      - name: Create local.properties
+        run: echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+      - name: Verify local.properties
+        run: cat android/local.properties
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+      - name: Run Android Lint
+        working-directory: android
+        run: ./gradlew lintDebug
 
-      - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed .
+  detekt:
+    name: Kotlin Detekt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: 'stable'
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+      - name: Get Flutter dependencies
+        run: flutter pub get
+      - name: Create local.properties
+        run: echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+      - name: Verify local.properties
+        run: cat android/local.properties
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+      - name: Run Detekt
+        working-directory: android
+        run: ./gradlew detektDebug
 
-      - name: Static analysis
-        run: flutter analyze
-
-      - name: Run tests
-        run: flutter test
-
-      - name: Build APK
-        run: flutter build apk --debug
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: 'stable'
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+      - run: flutter pub get
+      - run: flutter build apk --debug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
