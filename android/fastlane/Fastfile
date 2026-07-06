@@ -1,0 +1,44 @@
+default_platform(:android)
+
+platform :android do
+  desc "Runs all the tests"
+  lane :test do
+    # You can add local android tests here if needed
+  end
+
+  desc "Submit a new Internal Build to Play Store"
+  lane :internal do
+    # 1. Build the App Bundle
+    sh("flutter build appbundle --release")
+
+    # 2. Upload to Play Store Internal Track
+    upload_to_play_store(
+      track: 'internal',
+      aab: '../build/app/outputs/bundle/release/app-release.aab'
+    )
+  end
+
+  desc "Submit a new Beta Build to Play Store"
+  lane :beta do
+    sh("flutter build appbundle --release")
+    upload_to_play_store(
+      track: 'beta',
+      aab: '../build/app/outputs/bundle/release/app-release.aab'
+    )
+  end
+
+  desc "Deploy a new version to the Google Play Store"
+  lane :production do
+    sh("flutter build appbundle --release")
+    upload_to_play_store(
+      track: 'production',
+      aab: '../build/app/outputs/bundle/release/app-release.aab'
+    )
+  end
+
+  desc "Increment version code and push to git"
+  lane :bump_version do
+    # Custom script or pubspec.yaml manipulation would go here
+    # Standard practice for Flutter is often manual or CI-driven
+  end
+end
