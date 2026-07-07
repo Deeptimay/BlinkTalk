@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    if: github.actor != 'dependabot[bot]'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      #################################################
+      # Quality Gates
+      #################################################
+
+      - name: Run Unit Tests
+        run: flutter test --coverage
+
+      - name: Flutter Analyze
+        run: flutter analyze
+
+      - name: Create local.properties
+        run: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+
+      - name: Android Lint
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew lintDebug
+
+      - name: Detekt
+        working-directory: android
+        run: ./gradlew detektDebug
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      #################################################
+      # Android Signing
+      #################################################
+
+      - name: Decode Android Keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          cat <<EOF > android/key.properties
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=../upload-keystore.jks
+          EOF
+
+      #################################################
+      # Version
+      #################################################
+
+      - name: Extract Version
+        id: version
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      #################################################
+      # Build
+      #################################################
+
+      - name: Build Release App Bundle
+        run: |
+          flutter build appbundle \
+            --release \
+            --build-name=${{ steps.version.outputs.VERSION }} \
+            --build-number=${{ github.run_number }}
+
+      #################################################
+      # Play Store
+      #################################################
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: android
+
+      - name: Create Play Store Credentials
+        run: |
+          mkdir -p android/fastlane
+          echo '${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON }}' > android/fastlane/play-store-credentials.json
+
+      - name: Upload to Google Play Internal Testing
+        working-directory: android
+        run: bundle exec fastlane internal
+
+      #################################################
+      # GitHub Release
+      #################################################
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: build/app/outputs/bundle/release/app-release.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

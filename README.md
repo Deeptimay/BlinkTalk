@@ -1,47 +1,77 @@
 # BlinkTalk
 
-A new Flutter project.
+A professional Flutter project with high-grade CI/CD and DevOps automation.
 
-## CI/CD Infrastructure
+## 🚀 DevOps Infrastructure (12 Phases)
 
-This project uses a robust CI/CD pipeline built with GitHub Actions to ensure code quality, security, and consistent builds.
+This project implements a complete, industry-standard automation pipeline using GitHub Actions, Fastlane, and SonarCloud.
 
-### 🚀 Automated Workflows
+### 📋 Automated Workflows
 
-- **PR Checks (`pr-checks.yml`)**: Runs on every pull request to `main` and `develop`.
-  - **Dart Format**: Ensures consistent code styling.
-  - **Flutter Analyze**: Performs static analysis with strict rules.
-  - **Unit Tests**: Runs tests with coverage reporting.
-  - **Android Lint**: Native Android code quality checks.
-  - **Kotlin Detekt**: Strict static analysis for Kotlin code.
-  - **Build App Bundle**: Verifies compilation and generates a downloadable `.aab` artifact.
-- **PR Metadata (`pr-metadata.yml`)**: Validates PR titles (Conventional Commits) and ensures descriptions are present.
-- **SonarCloud (`sonar.yml`)**: Integrated for long-term code quality tracking and coverage visualization.
-- **Security Scan (`security.yml`)**: 
-  - **Gitleaks**: Detects hardcoded secrets.
-  - **CodeQL**: Automated code scanning for vulnerabilities in native code.
-- **Dependabot**: Automatically manages dependency updates for Flutter, Gradle, and GitHub Actions.
+1. **PR Checks (`pr-checks.yml`)**: Parallel validation for every Pull Request.
+   - **Dart Format**: UI/Code styling.
+   - **Flutter Analyze**: Strict static analysis.
+   - **Unit Tests**: Logic validation with coverage.
+   - **Android Lint**: Native Android quality checks.
+   - **Kotlin Detekt**: Strict Kotlin static analysis.
+   - **Build App Bundle**: Generates optimized `.aab` artifacts.
+2. **PR Metadata (`pr-metadata.yml`)**: Validates titles (Conventional Commits) and descriptions.
+3. **Automated Versioning (`release-please.yml`)**: Manages `pubspec.yaml` versions and `CHANGELOG.md` automatically.
+4. **Security Scan (`security.yml`)**: 
+   - **Gitleaks**: Secrets detection.
+   - **CodeQL**: Deep vulnerability scanning for native code.
+5. **SonarCloud (`sonar.yml`)**: Continuous quality gate and coverage dashboard.
+6. **Release Pipeline (`release.yml`)**: Single-command production deployment triggered by tags.
 
-### 💎 Code Quality Standards
+### 💎 Code Quality & Standards
 
-- **Strict Linting**: Custom `analysis_options.yaml` with 20+ strict rules.
-- **Kotlin Quality**: Configured Detekt with custom rules for Flutter compatibility.
-- **SonarCloud**: Dashboard for tracking technical debt and test coverage.
+- **Strict Linting**: Comprehensive `analysis_options.yaml` (20+ rules).
+- **Kotlin Standard**: Custom Detekt configuration for Flutter compatibility.
+- **SonarCloud**: Unified dashboard for technical debt and coverage.
+- **Code Ownership**: Automated reviewer assignments via `.github/CODEOWNERS`.
 
-### 🛠️ Local Development
+---
 
-#### Git Hooks
-We use a **pre-push hook** to catch issues before they reach the server. It automatically runs:
-1. `flutter analyze` on changed files.
-2. `detekt` on changed Kotlin files.
+## 🔑 Setup & Secrets Management
 
-To set up the hook manually if it's missing:
+To enable full automation, you must configure the following in your GitHub Repository Secrets.
+
+### 1. SonarCloud
+- `SONAR_TOKEN`: Your project analysis token.
+
+### 2. Android App Signing
+Required for signed production builds.
+- `ANDROID_KEYSTORE_BASE64`: Base64 of your `.jks` file (`openssl base64 -A -in upload-keystore.jks`).
+- `KEY_ALIAS`: Your key alias (default: `upload`).
+- `KEY_PASSWORD`: Password for the key.
+- `STORE_PASSWORD`: Password for the keystore.
+
+### 3. Google Play Store
+- `PLAYSTORE_SERVICE_ACCOUNT_JSON`: The full JSON from your Google Cloud Service Account (Release Manager role).
+
+---
+
+## 🛠️ Developer Guide
+
+### Local Automation
+Every push is locally verified to ensure no "dirty" code reaches the server.
 ```bash
+# Setup the pre-push hook if not active
 chmod +x .git/hooks/pre-push
 ```
 
-#### Code Ownership
-Automated reviewer assignments are handled via `.github/CODEOWNERS`.
+### How to Release (The "One-Command" Flow)
+1. Use **Conventional Commits** (`feat:`, `fix:`, `chore:`, etc.).
+2. Merge `develop` into `main`.
+3. **Release Please** creates a "Release PR". Merge it.
+4. Run the magic command:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+5. GitHub Actions will automatically **Test -> Lint -> Sonar -> Build -> Sign -> Upload to Play Store (Internal Testing)**.
+
+---
 
 ## Getting Started
 
